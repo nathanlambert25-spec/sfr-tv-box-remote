@@ -201,3 +201,27 @@ async def test_stop_during_listening_and_repeated_stop(driver, monkeypatch):
     assert websocket.close_calls >= 1
     assert driver._websocket is None
     assert driver._reconnect_task is None
+
+
+@pytest.mark.asyncio
+async def test_is_connected_tracks_websocket_lifecycle(driver, monkeypatch):
+    """is_connected must reflect the WebSocket connection lifecycle."""
+    connected = asyncio.Event()
+    websocket = BlockingWebSocket()
+
+    async def fake_connect(uri):
+        connected.set()
+        return websocket
+
+    monkeypatch.setattr(websockets, "connect", fake_connect)
+
+    assert driver.is_connected is False
+
+    await driver.start()
+    await asyncio.wait_for(connected.wait(), timeout=1)
+
+    assert driver.is_connected is True
+
+    await driver.stop()
+
+    assert driver.is_connected is False

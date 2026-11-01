@@ -2,7 +2,7 @@
 
 ## 📊 État Global
 - **Phase actuelle** : Phase 3 (Intégration Home Assistant)
-- **Dernier Step validé** : Phase 3.2 (config_flow.py) + fiabilisation WebSocket
+- **Dernier Step validé** : Phase 3.3 (plateforme Remote) + fiabilisation WebSocket
 
 ## 📝 Journal des Steps
 
@@ -15,6 +15,7 @@
 - [ ] **Phase 3** : Intégration Home Assistant (en cours)
 - [x] **Phase 3.1** : manifest.json + tests/test_manifest.py (3 tests réussis, Ruff validé, publié sur GitHub)
 - [x] **Phase 3.2** : config_flow.py + tests/test_config_flow.py (6 tests réussis, publié sur GitHub)
+- [x] **Phase 3.3** : Plateforme Remote (`remote.py`), cycle de vie dans `__init__.py`, état de connexion `is_connected` et tests associés (77 tests au total, Ruff validé)
 - [x] **Step 1.4** : Fiabilisation WebSocket (supervision, reconnexion exponentielle, arrêt propre, 20 tests ciblés réussis)
 - [x] **Phase 4.1** : CI (Workflows GitHub Actions)
 - [ ] **Phase 4.2** : CD (Publication)
@@ -26,12 +27,14 @@
 
 ## 🚧 Travail en cours (WIP)
 
-- Phase 3 : manifeste et flux de configuration terminés. Reconnexion WebSocket fiabilisée.
-- Validation locale actuelle : 43 tests réussis, Ruff sans erreur, 20 fichiers formatés.
+- Phase 3.1 à 3.3 : manifeste, flux de configuration et plateforme Remote implémentés.
+- Reconnexion WebSocket fiabilisée ; propriété publique `is_connected` ajoutée.
+- Validation locale : 77 tests réussis, Ruff sans erreur, 23 fichiers formatés.
+- Phase 3.3 en attente de validation finale et de publication sur GitHub.
 
 ## ⏭️ Prochaine Étape (Passage de relais)
 
-- Définir et faire approuver la spécification de la prochaine brique d'intégration Home Assistant avant son implémentation.
+- Valider et publier la Phase 3.3 (plateforme Remote) sur GitHub avant de commencer la prochaine fonctionnalité.
 
 ## 🗂️ Backlog / V2
 

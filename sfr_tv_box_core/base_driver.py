@@ -38,6 +38,11 @@ class BaseSFRBoxDriver(ABC):
         self._listeners = []  # Placeholder for message listeners
         self._stopping = False
 
+    @property
+    def is_connected(self) -> bool:
+        """Return whether the WebSocket is connected."""
+        return self._websocket is not None
+
     @abstractmethod
     async def _handle_message(self, message: str) -> None:
         """Abstract method to handle incoming messages from the WebSocket.

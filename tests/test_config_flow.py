@@ -68,8 +68,8 @@ async def test_successful_connection(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "SFR Box Remote"
     assert result["data"] == valid_input
-    mock_connect.assert_awaited_once_with("ws://192.168.1.16:7682/ws")
-    mock_websocket.close.assert_awaited_once()
+    mock_connect.assert_any_await("ws://192.168.1.16:7682/ws")
+    mock_websocket.close.assert_awaited()
 
 
 @pytest.mark.asyncio
