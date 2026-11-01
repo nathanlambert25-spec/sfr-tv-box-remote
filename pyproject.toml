@@ -8,13 +8,14 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["sfr_box_core", "custom_components*"]
+include = ["sfr_tv_box_core*"]
 
 [project.optional-dependencies]
 dev = [
     "ruff>=0.1.0",
     "pre-commit>=3.0.0",
     "pytest-cov>=4.0.0",
+    "pytest-homeassistant-custom-component",
 ]
 
 [tool.pytest.ini_options]
