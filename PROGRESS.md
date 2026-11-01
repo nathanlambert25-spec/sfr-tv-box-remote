@@ -16,6 +16,7 @@
 - [x] **Phase 3.1** : manifest.json + tests/test_manifest.py (3 tests réussis, Ruff validé, publié sur GitHub)
 - [x] **Phase 3.2** : config_flow.py + tests/test_config_flow.py (6 tests réussis, publié sur GitHub)
 - [x] **Phase 3.3** : Plateforme Remote (`remote.py`), cycle de vie dans `__init__.py`, état de connexion `is_connected` et tests associés (77 tests au total, Ruff validé)
+- [ ] **Phase 3.4** : Déclarer le moteur sfr_tv_box_core comme dépendance Git épinglée pour Home Assistant (tests locaux validés, installation réelle à vérifier)
 - [x] **Step 1.4** : Fiabilisation WebSocket (supervision, reconnexion exponentielle, arrêt propre, 20 tests ciblés réussis)
 - [x] **Phase 4.1** : CI (Workflows GitHub Actions)
 - [ ] **Phase 4.2** : CD (Publication)

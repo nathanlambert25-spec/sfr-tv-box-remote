@@ -46,4 +46,6 @@ def test_manifest_matches_project_specification():
     assert manifest["config_flow"] is True
     assert manifest["integration_type"] == "device"
     assert manifest["iot_class"] == "local_push"
-    assert "websockets>=12.0" in manifest["requirements"]
+    assert manifest["requirements"] == [
+        "sfr-tv-box-remote @ git+https://github.com/nathanlambert25-spec/sfr-tv-box-remote.git@a57a8b983ee2a1ef7b81ab19d8af4b6738bba58d"
+    ]
