@@ -1,8 +1,8 @@
 # PROGRESS.md : État d'avancement du projet
 
 ## 📊 État Global
-- **Phase actuelle** : Phase 2 (Implémentation des drivers)
-- **Dernier Step validé** : Phase 2.2 (sfr_tv_box_remote.py)
+- **Phase actuelle** : Phase 3 (Intégration Home Assistant)
+- **Dernier Step validé** : Phase 3.1 (manifest.json + tests)
 
 ## 📝 Journal des Steps
 
@@ -13,6 +13,7 @@
 - [x] **Phase 2.2** : sfr_tv_box_remote.py (Mode "1-shot") - *Priorité Haute*
 - [ ] **Phase 2.3** : stb7_driver.py - *Priorité Moyenne*
 - [ ] **Phase 3** : Intégration Home Assistant
+- [x] **Phase 3.1** : manifest.json + tests/test_manifest.py (3 tests réussis, Ruff validé, publié sur GitHub)
 - [x] **Phase 4.1** : CI (Workflows GitHub Actions)
 - [ ] **Phase 4.2** : CD (Publication)
 - [ ] **Phase 4.3** : sfr_tv_box_remote.py (Mode interactif) - *Priorité Moyenne*
@@ -23,11 +24,11 @@
 
 ## 🚧 Travail en cours (WIP)
 
-- Aucun
+- Phase 3 : manifeste terminé. Prochaine brique : config_flow.py (spécification à définir et faire approuver avant implémentation).
 
 ## ⏭️ Prochaine Étape (Passage de relais)
 
-- Lancer la **Phase 2.3** : Implémenter le driver pour la Box STB7 (`stb7_driver.py`).
+- Définir et faire approuver `CONFIG_FLOW_SPEC.md` avant de commencer l'implémentation du flux de configuration Home Assistant.
 
 ## 🗂️ Backlog / V2
 
