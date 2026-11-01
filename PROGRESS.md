@@ -2,7 +2,7 @@
 
 ## 📊 État Global
 - **Phase actuelle** : Phase 3 (Intégration Home Assistant)
-- **Dernier Step validé** : Phase 3.3 (plateforme Remote) + fiabilisation WebSocket
+- **Dernier Step validé** : Phase 3.4 (dépendance Git et intégration Home Assistant validées)
 
 ## 📝 Journal des Steps
 
@@ -16,7 +16,7 @@
 - [x] **Phase 3.1** : manifest.json + tests/test_manifest.py (3 tests réussis, Ruff validé, publié sur GitHub)
 - [x] **Phase 3.2** : config_flow.py + tests/test_config_flow.py (6 tests réussis, publié sur GitHub)
 - [x] **Phase 3.3** : Plateforme Remote (`remote.py`), cycle de vie dans `__init__.py`, état de connexion `is_connected` et tests associés (77 tests au total, Ruff validé)
-- [ ] **Phase 3.4** : Déclarer le moteur sfr_tv_box_core comme dépendance Git épinglée pour Home Assistant (tests locaux validés, installation réelle à vérifier)
+- [x] **Phase 3.4** : Dépendance Git épinglée, moteur chargé dans Home Assistant et commande volume_up testée avec succès
 - [x] **Step 1.4** : Fiabilisation WebSocket (supervision, reconnexion exponentielle, arrêt propre, 20 tests ciblés réussis)
 - [x] **Phase 4.1** : CI (Workflows GitHub Actions)
 - [ ] **Phase 4.2** : CD (Publication)
@@ -28,7 +28,7 @@
 
 ## 🚧 Travail en cours (WIP)
 
-- Phase 3.1 à 3.3 : manifeste, flux de configuration et plateforme Remote implémentés.
+- Phase 3.1 à 3.4 : manifeste, flux de configuration, plateforme Remote et validation réelle dans Home Assistant terminés.
 - Reconnexion WebSocket fiabilisée ; propriété publique `is_connected` ajoutée.
 - Validation locale : 77 tests réussis, Ruff sans erreur, 23 fichiers formatés.
 - Phase 3.3 en attente de validation finale et de publication sur GitHub.
