@@ -172,43 +172,37 @@ async def test_stop_on_stopped_driver(driver):
 
 
 @pytest.mark.asyncio
-async def test_listen_for_messages_reconnects_on_connection_closed(driver, monkeypatch, caplog):
-    """Test that the driver tries to reconnect after a ConnectionClosed exception."""
+async def test_listen_for_messages_returns_on_connection_closed(driver, monkeypatch, caplog):
+    """A connection closure must not recursively restart the driver."""
     caplog.set_level(logging.INFO)
-    # Mock the driver's own start/stop methods to track if they are called
     driver.start = AsyncMock()
     driver.stop = AsyncMock()
 
-    # Mock the websocket to raise an exception when iterated over
     mock_ws = AsyncMock()
     mock_ws.__aiter__.side_effect = websockets.exceptions.ConnectionClosed(None, None)
     driver._websocket = mock_ws
 
     await driver._listen_for_messages()
 
-    # Verify that the reconnection logic was triggered
-    driver.stop.assert_awaited_once()
-    driver.start.assert_awaited_once()
+    driver.stop.assert_not_awaited()
+    driver.start.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_listen_for_messages_reconnects_on_exception(driver, monkeypatch, caplog):
-    """Test that the driver tries to reconnect after a generic Exception during listening."""
+async def test_listen_for_messages_returns_on_exception(driver, monkeypatch, caplog):
+    """A listening exception must not recursively restart the driver."""
     caplog.set_level(logging.ERROR)
-    # Mock the driver's own start/stop methods
     driver.start = AsyncMock()
     driver.stop = AsyncMock()
 
-    # Mock the websocket to raise a generic Exception
     mock_ws = AsyncMock()
     mock_ws.__aiter__.side_effect = Exception("Simulated listening error")
     driver._websocket = mock_ws
 
     await driver._listen_for_messages()
 
-    # Verify that the reconnection logic was triggered
-    driver.stop.assert_awaited_once()
-    driver.start.assert_awaited_once()
+    driver.stop.assert_not_awaited()
+    driver.start.assert_not_awaited()
     assert "Error during message listening: Simulated listening error" in caplog.text
 
 
@@ -220,98 +214,84 @@ async def test_driver_initialization_default_port():
 
 
 @pytest.mark.asyncio
-async def test_start_creates_task_and_connects(monkeypatch):
-    """Test that start() connects and creates the listening task."""
+async def test_start_creates_supervisor_task(monkeypatch):
+    """start() must return without waiting for the WebSocket connection."""
     driver = ConcreteDriver(host="localhost", port=1234)
-    # Mock the underlying websocket connection to avoid real network calls.
-    # This allows the original _connect() method to run and set _websocket.
-    mock_ws_connect = AsyncMock(return_value=MagicMock())
-    monkeypatch.setattr(websockets, "connect", mock_ws_connect)
+    connected = asyncio.Event()
+    listening = asyncio.Event()
+    mock_ws = AsyncMock()
 
-    # Mock the listening method itself to prevent the test from hanging
-    listen_mock = AsyncMock()
+    async def fake_connect(uri):
+        connected.set()
+        return mock_ws
+
+    async def blocked_listen():
+        listening.set()
+        await asyncio.Future()
+
+    monkeypatch.setattr(websockets, "connect", fake_connect)
+    listen_mock = AsyncMock(side_effect=blocked_listen)
     monkeypatch.setattr(driver, "_listen_for_messages", listen_mock)
 
-    # A task object is not directly awaitable, so a MagicMock is more accurate.
-    mock_task = MagicMock(spec=asyncio.Task)
+    await asyncio.wait_for(driver.start(), timeout=1)
+    await asyncio.wait_for(connected.wait(), timeout=1)
+    await asyncio.wait_for(listening.wait(), timeout=1)
 
-    # The mock for create_task needs to "consume" the coroutine passed to it
-    # to prevent a "coroutine never awaited" warning.
-    def consume_coro_and_return_mock(coro):
-        coro.close()  # Mark the coroutine as handled
-        return mock_task
+    assert driver._reconnect_task is not None
+    assert not driver._reconnect_task.done()
+    listen_mock.assert_awaited_once()
 
-    mock_create_task = MagicMock(side_effect=consume_coro_and_return_mock)
-    monkeypatch.setattr(asyncio, "create_task", mock_create_task)
-
-    await driver.start()
-
-    # Verify that the connection was attempted
-    mock_ws_connect.assert_awaited_once()
-    # Verify that the listening coroutine was passed to create_task
-    listen_mock.assert_called_once()
-    mock_create_task.assert_called_once()
-    # Verify that the task was stored
-    assert driver._reconnect_task is mock_task
+    await driver.stop()
 
 
 @pytest.mark.asyncio
 async def test_stop_cancels_task_and_closes_websocket():
-    """Test that stop() cancels the task and closes the connection."""
+    """stop() must close the socket and cancel and await the supervisor."""
     driver = ConcreteDriver(host="localhost", port=1234)
-    # Simulate a running driver by assigning mocks to instance attributes
     mock_ws = AsyncMock()
-    # A task object itself is not awaitable in the same way an AsyncMock is.
-    # Using a MagicMock is more accurate and avoids RuntimeWarnings.
-    mock_task = MagicMock(spec=asyncio.Task)
 
+    async def wait_forever():
+        await asyncio.Future()
+
+    task = asyncio.create_task(wait_forever())
     driver._websocket = mock_ws
-    driver._reconnect_task = mock_task
+    driver._reconnect_task = task
 
     await driver.stop()
 
-    # Assert on the local mock variables, not on the driver attributes which are now None
     mock_ws.close.assert_awaited_once()
-    mock_task.cancel.assert_called_once()
+    assert task.done()
+    assert task.cancelled()
     assert driver._websocket is None
     assert driver._reconnect_task is None
 
 
 @pytest.mark.asyncio
-async def test_listen_loop_restarts_on_handler_exception(monkeypatch, caplog):
-    """Test that the listen loop restarts if _handle_message raises an exception."""
-    # Use a fresh driver to monkeypatch its methods for this specific test
+async def test_listen_loop_returns_on_handler_exception(monkeypatch, caplog):
+    """A handler exception must not recursively restart the driver."""
     driver = ConcreteDriver(host="localhost", port=1234)
     caplog.set_level(logging.ERROR)
 
-    # Monkeypatch the driver's own start/stop methods to track if they are called
     start_mock = AsyncMock()
     stop_mock = AsyncMock()
     monkeypatch.setattr(driver, "start", start_mock)
     monkeypatch.setattr(driver, "stop", stop_mock)
 
-    # Mock the websocket to provide one message
     mock_ws = AsyncMock()
     mock_ws.__aiter__.return_value = ["a message"]
     driver._websocket = mock_ws
 
-    # Mock the internal handler to raise an exception.
-    # Defining the side effect as an async function is sometimes more stable
-    # for the mock runner than a direct exception object.
     error_message = "Handler failed!"
 
-    async def raise_exception_side_effect(*args, **kwargs):
+    async def raise_exception(*args, **kwargs):
         raise Exception(error_message)
 
-    handle_mock = AsyncMock(side_effect=raise_exception_side_effect)
+    handle_mock = AsyncMock(side_effect=raise_exception)
     monkeypatch.setattr(driver, "_handle_message", handle_mock)
 
     await driver._listen_for_messages()
 
-    # Verify the message was passed to the handler
     handle_mock.assert_awaited_once_with("a message")
-    # Verify the exception was logged
     assert error_message in caplog.text
-    # Verify the reconnection logic was triggered
-    stop_mock.assert_awaited_once()
-    start_mock.assert_awaited_once()
+    stop_mock.assert_not_awaited()
+    start_mock.assert_not_awaited()

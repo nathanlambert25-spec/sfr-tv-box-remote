@@ -36,6 +36,7 @@ class BaseSFRBoxDriver(ABC):
         self._reconnect_task: Optional[asyncio.Task] = None
         self._message_callback: Optional[Callable[[str], None]] = None
         self._listeners = []  # Placeholder for message listeners
+        self._stopping = False
 
     @abstractmethod
     async def _handle_message(self, message: str) -> None:
@@ -67,21 +68,57 @@ class BaseSFRBoxDriver(ABC):
                 await asyncio.sleep(retry_delay)
                 retry_delay = min(retry_delay * 2, 60)  # Exponential backoff, max 60s
 
+    async def _connection_loop(self) -> None:
+        """Supervises the WebSocket connection and reconnects when needed."""
+        while not self._stopping:
+            try:
+                await self._connect()
+
+                if self._stopping:
+                    break
+
+                await self._listen_for_messages()
+
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                _LOGGER.error("Error in WebSocket connection loop: %s", e)
+            finally:
+                if self._websocket:
+                    try:
+                        await self._websocket.close()
+                    except Exception as e:
+                        _LOGGER.warning("Error closing WebSocket: %s", e)
+                    self._websocket = None
+
+            if not self._stopping:
+                await asyncio.sleep(1)
+
     async def start(self) -> None:
-        """Starts the WebSocket connection and message listening."""
-        await self._connect()
-        if self._websocket:
-            self._reconnect_task = asyncio.create_task(self._listen_for_messages())
+        """Starts the connection supervisor without waiting for the box."""
+        if self._reconnect_task and not self._reconnect_task.done():
+            return
+
+        self._stopping = False
+        self._reconnect_task = asyncio.create_task(self._connection_loop())
 
     async def stop(self) -> None:
-        """Closes the WebSocket connection and stops reconnection attempts."""
+        """Stops the supervisor and closes the WebSocket connection."""
+        self._stopping = True
+
         if self._websocket:
             _LOGGER.info("Closing WebSocket connection.")
             await self._websocket.close()
             self._websocket = None
-        if self._reconnect_task:
+
+        task = self._reconnect_task
+        if task:
             _LOGGER.info("Cancelling reconnection task.")
-            self._reconnect_task.cancel()
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
             self._reconnect_task = None
 
     async def send_message(self, message: str) -> None:
@@ -115,26 +152,23 @@ class BaseSFRBoxDriver(ABC):
         self.register_listener(callback)
 
     async def _listen_for_messages(self) -> None:
-        """Listens for incoming messages from the WebSocket."""
+        """Listens for incoming messages without managing reconnections."""
         if not self._websocket:
             return
 
         try:
             async for message in self._websocket:
                 _LOGGER.debug("Received message: %s", message)
-                # Assuming message is a string, which is common.
-                # If it can be bytes, add handling for that.
                 if isinstance(message, str):
                     for listener in self._listeners:
                         listener(message)
                     await self._handle_message(message)
+
         except websockets.exceptions.ConnectionClosed:
-            _LOGGER.info("WebSocket connection closed. Attempting to reconnect...")
-            await self.stop()
-            await self.start()  # Trigger reconnection logic
+            _LOGGER.info("WebSocket connection closed.")
+
+        except asyncio.CancelledError:
+            raise
+
         except Exception as e:
             _LOGGER.error("Error during message listening: %s", e)
-            await self.stop()
-            # Depending on the desired behavior, you might want to trigger
-            # reconnection here too.
-            await self.start()
